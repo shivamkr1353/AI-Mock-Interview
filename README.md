@@ -67,12 +67,12 @@ A cutting-edge AI-powered mock interview platform designed to revolutionize inte
 
 1. Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/shivamkr1353/AI-Mock-Interview.git
 ```
 
 2. Install dependencies
 ```bash
-cd ai-mock-interview
+cd AI-Mock-Interview
 npm install
 ```
 
@@ -100,7 +100,8 @@ npm run dev
 
 ## 📞 Contact
 
-Shivam: [EMAIL_ADDRESS]
+- **GitHub**: [shivamkr1353](https://github.com/shivamkr1353)
+- **LinkedIn**: [Shivam Kumar](https://www.linkedin.com/in/shivamkumar997386/)
 
 ## 📜 License
 

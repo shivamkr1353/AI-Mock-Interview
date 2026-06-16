@@ -108,7 +108,7 @@ function Header() {
                     onClick={() => router.push('/')}
                 >
                     <Image 
-                        src='/logo.svg' 
+                        src='/logo.png' 
                         width={50} 
                         height={50} 
                         alt='Logo' 

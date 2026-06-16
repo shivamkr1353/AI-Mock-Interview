@@ -273,7 +273,7 @@ export default function LandingPage() {
           transition={{ duration: 0.5 }}
           className="absolute top-3 left-1">
           <Image 
-            src='/logo.svg' 
+            src='/logo.png' 
             width={20} 
             height={20} 
             alt='Logo' 
