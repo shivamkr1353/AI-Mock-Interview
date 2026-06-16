@@ -100,7 +100,7 @@ npm run dev
 
 ## 📞 Contact
 
-Shivam
+Shivam: [EMAIL_ADDRESS]
 
 ## 📜 License
 
