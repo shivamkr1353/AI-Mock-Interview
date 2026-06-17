@@ -95,10 +95,11 @@ import { MockInterview } from '@/utils/schema';
 import { eq } from 'drizzle-orm';
 import { Lightbulb, WebcamIcon, ArrowLeft, Play, CameraOff } from 'lucide-react';
 import Link from 'next/link';
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, use } from 'react'
 import Webcam from 'react-webcam';
 
-function Interview({params}) {
+function Interview(props) {
+    const params = use(props.params);
     const [interviewData, setInterviewData] = useState();
     const [webcamEnabled, setWebcamEnabled] = useState(false);
     const webcamRef = useRef(null);

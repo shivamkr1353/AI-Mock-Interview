@@ -162,7 +162,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { chatSession } from '@/utils/GeminiAiModel';
+import { sendMessageWithRetry } from '@/utils/GeminiAiModel';
+import { toast } from 'sonner';
 import { LoaderCircle } from 'lucide-react';
 import { db } from '@/utils/db';
 import { MockInterview } from '@/utils/schema';
@@ -191,24 +192,33 @@ function AddNewInterview() {
   
       const inputPrompt = `
       Job Title: ${jobTitle}, Job Description: ${jobDescription}, Tech Stacks: ${techStacks}, Years of Experience: ${duration}.
-      Based on this job, generate ${process.env.NEXT_PUBLIC_INTERVIEW_QUES_COUNT} interview questions along with answers in **valid JSON format**.
+      Based on this job, generate ${process.env.NEXT_PUBLIC_INTERVIEW_QUES_COUNT} interview questions along with answers in JSON format.
   
-      Strictly follow these JSON rules:
-      1. **Do not include any markdown formatting** (like \`\`\`json or \`\`\`).
-      2. Ensure that all answers are **single-line or properly escaped**.
-      3. Do **not** use line breaks (\\n) or extra spaces inside the JSON values.
-      4. Provide output as a **valid JSON object**, where each question has "ques" and "ans" fields.
+      Strictly follow these rules:
+      1. Ensure that all answers are single-line or properly escaped.
+      2. Do not use line breaks inside the JSON values.
+      3. Provide output as a valid JSON array, where each question has "ques" and "ans" fields.
       `;
   
       try {
-          const result = await chatSession.sendMessage(inputPrompt);
+          const result = await sendMessageWithRetry(inputPrompt);
           const rawResponse = await result.response.text(); 
           console.log("Raw Response:", rawResponse);
   
-          const jsonMatch = rawResponse.match(/```json([\s\S]*?)```/);
-          if (!jsonMatch) throw new Error("Response does not contain JSON");
+          // Try extracting JSON from markdown code fences first
+          let mockJsonResponse;
+          const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (jsonMatch) {
+              mockJsonResponse = jsonMatch[1].trim();
+          } else {
+              // Fall back: extract the first JSON array or object from the raw text
+              const rawJsonMatch = rawResponse.match(/[\[{][\s\S]*[\]}]/);
+              if (!rawJsonMatch) throw new Error("Response does not contain JSON");
+              mockJsonResponse = rawJsonMatch[0].trim();
+          }
   
-          const mockJsonResponse = jsonMatch[1].trim();
+          // Validate that it's actually parseable JSON
+          JSON.parse(mockJsonResponse);
           setJsonResponse(mockJsonResponse);
   
           if(mockJsonResponse){
@@ -237,7 +247,14 @@ function AddNewInterview() {
           
           console.log("Parsed JSON:", parsedResponse);
       } catch (error) {
-          console.error("JSON Parsing Error:", error);
+          console.error("Error:", error);
+          if (error?.status === 503 || error?.message?.includes('503')) {
+              toast.error('AI models are currently overloaded. Please try again in a few seconds.');
+          } else if (error?.status === 429 || error?.message?.includes('429')) {
+              toast.error('API rate limit reached. Please wait a moment and try again.');
+          } else {
+              toast.error('Something went wrong. Please try again.');
+          }
       } finally {
           setLoading(false);
       }

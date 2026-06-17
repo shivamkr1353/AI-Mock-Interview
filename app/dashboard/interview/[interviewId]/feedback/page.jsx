@@ -116,7 +116,7 @@
 import { db } from '@/utils/db'
 import { UserAnswer } from '@/utils/schema'
 import { eq } from 'drizzle-orm'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, use } from 'react'
 import {
     Collapsible,
     CollapsibleContent,
@@ -126,7 +126,8 @@ import { ChevronsUpDown, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
-function Feedback({ params }) {
+function Feedback(props) {
+    const params = use(props.params);
     const [feedbackList, setFeedbackList] = useState([]);
     const router = useRouter();
     

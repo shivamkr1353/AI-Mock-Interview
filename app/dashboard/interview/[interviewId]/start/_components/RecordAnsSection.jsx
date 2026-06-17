@@ -574,7 +574,7 @@
 "use client"
 import { Button } from '@/components/ui/button'
 import { db } from '@/utils/db';
-import { chatSession } from '@/utils/GeminiAiModel';
+import { sendMessageWithRetry } from '@/utils/GeminiAiModel';
 import { UserAnswer } from '@/utils/schema';
 import { useUser } from '@clerk/nextjs';
 import { Mic, StopCircle, CameraOff, Edit, Check, Camera } from 'lucide-react';
@@ -625,9 +625,13 @@ function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData
                 };
                 
                 recognitionRef.current.onerror = (event) => {
-                    console.error("❌ Speech Recognition Error:", event.error);
+                    console.warn("⚠️ Speech Recognition Error:", event.error);
                     if (event.error === 'no-speech') {
                         console.log("No speech detected");
+                    } else if (event.error === 'network') {
+                        toast.error("Network error: Check your internet connection and try again. Use localhost:3000 instead of IP address.");
+                    } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                        toast.error("Microphone access denied. Please allow microphone in browser settings.");
                     } else {
                         toast.error(`Speech recognition error: ${event.error}`);
                     }
@@ -758,7 +762,7 @@ function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData
                 "2. Ensure that all answers are **single-line or properly escaped**." +
                 "3. Do **not** use line breaks (\\n) or extra spaces inside the JSON values.";
         
-            const result = await chatSession.sendMessage(feedbackPrompt);
+            const result = await sendMessageWithRetry(feedbackPrompt);
             const rawResponse = await result.response.text();
             console.log("Raw Response:", rawResponse);
             

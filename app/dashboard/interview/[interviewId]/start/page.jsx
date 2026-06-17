@@ -89,14 +89,15 @@
 import { db } from '@/utils/db';
 import { MockInterview } from '@/utils/schema';
 import { eq } from 'drizzle-orm';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, use } from 'react'
 import QuestionsSection from './_components/QuestionsSection';
 import RecordAnsSection from './_components/RecordAnsSection';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, StopCircle } from 'lucide-react';
 
-function StartInterview({params}) {
+function StartInterview(props) {
+    const params = use(props.params);
     const [interviewData, setInterviewData] = useState();
     const [mockInterviewQues, setMockInterviewQues] = useState([]);
     const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
@@ -126,11 +127,15 @@ function StartInterview({params}) {
             console.log("🛠 Parsed JSON Response:", jsonMockResp);
             console.log("🛠 Type of jsonMockResp:", typeof jsonMockResp);
     
-            // 🔥 Dynamically detect the key
-            const key = jsonMockResp.interview_questions ? "interview_questions" : "interviewQuestions";
-            console.log(`🔍 Using Key: ${key}`);
-    
-            const extractedQuestions = jsonMockResp[key] || []; 
+            // Handle both plain arrays and nested objects from Gemini
+            let extractedQuestions;
+            if (Array.isArray(jsonMockResp)) {
+                extractedQuestions = jsonMockResp;
+            } else {
+                const key = jsonMockResp.interview_questions ? "interview_questions" : "interviewQuestions";
+                console.log(`🔍 Using Key: ${key}`);
+                extractedQuestions = jsonMockResp[key] || [];
+            }
             console.log("✅ Extracted Questions:", extractedQuestions);
     
             setMockInterviewQues(Array.isArray(extractedQuestions) ? extractedQuestions : []);
