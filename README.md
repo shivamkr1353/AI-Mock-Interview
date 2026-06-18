@@ -4,6 +4,8 @@
 
 A cutting-edge AI-powered mock interview platform designed to revolutionize interview preparation through advanced technology and intelligent feedback mechanisms.
 
+**🔗 Live Demo**: [https://ai-mock-interview-seven-pi.vercel.app](https://ai-mock-interview-seven-pi.vercel.app)
+
 ## 🔥 Key Features
 
 ### 🤖 AI-Powered Interview Generation
