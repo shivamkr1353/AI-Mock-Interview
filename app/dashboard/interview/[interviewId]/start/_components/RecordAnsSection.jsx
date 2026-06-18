@@ -577,7 +577,7 @@ import { db } from '@/utils/db';
 import { sendMessageWithRetry } from '@/utils/GeminiAiModel';
 import { UserAnswer } from '@/utils/schema';
 import { useUser } from '@clerk/nextjs';
-import { Mic, StopCircle, CameraOff, Edit, Check, Camera } from 'lucide-react';
+import { Mic, StopCircle, CameraOff, Edit, Check, Camera, LoaderCircle } from 'lucide-react';
 import moment from 'moment';
 import Image from 'next/image'
 import React, { useEffect, useRef, useState } from 'react'
@@ -586,8 +586,6 @@ import { toast } from 'sonner';
 
 function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData}) {
     const [userAnswer, setUserAnswer] = useState('');
-    const [editableAnswer, setEditableAnswer] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
     const {user} = useUser();
     const [loading, setLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
@@ -595,6 +593,12 @@ function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData
     const recognitionRef = useRef(null);
     const transcriptRef = useRef('');
     const webcamRef = useRef(null);
+
+    // Reset answer when question changes
+    useEffect(() => {
+        setUserAnswer('');
+        transcriptRef.current = '';
+    }, [activeQuestionIndex]);
 
     // Initialize speech recognition
     useEffect(() => {
@@ -706,8 +710,7 @@ function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData
                 
                 if (finalTranscript && finalTranscript.trim().length > 5) {
                     setUserAnswer(finalTranscript);
-                    setEditableAnswer(finalTranscript);
-                    setIsEditing(true);
+                    toast.success("Voice recording transcribed successfully!");
                 } else {
                     toast.error("No speech detected or answer too short");
                 }
@@ -724,22 +727,6 @@ function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData
         } else {
             startRecording();
         }
-    };
-
-    const handleEditAnswer = () => {
-        setEditableAnswer(userAnswer);
-        setIsEditing(true);
-    };
-
-    const handleSaveEditedAnswer = () => {
-        if (editableAnswer.trim().length < 5) {
-            toast.error('Answer is too short');
-            return;
-        }
-
-        setUserAnswer(editableAnswer);
-        setIsEditing(false);
-        updateUserAnswer(editableAnswer);
     };
 
     const updateUserAnswer = async (finalTranscript) => {
@@ -819,109 +806,108 @@ function RecordAnsSection({mockInterviewQues, activeQuestionIndex, interviewData
     return (
         <div className='flex flex-col items-center justify-center space-y-4 h-full'>
             {/* Webcam Section */}
-            <div className='bg-white/4 backdrop-blur-xl rounded-3xl border border-white/10 p-3 w-full'>
+            <div className='bg-white/4 backdrop-blur-xl rounded-3xl border border-white/10 p-2 w-full'>
                 <div className='relative rounded-2xl overflow-hidden'>
                     {webcamEnabled ? (
                         <Webcam
                             ref={webcamRef}
                             mirrored={true}
                             style={{
-                                height: 350,
+                                height: 220,
                                 width: '100%',
                                 objectFit: 'cover',
                                 borderRadius: '1rem'
                             }}
                         />
                     ) : (
-                        <div className='h-[300px] flex items-center justify-center bg-gray-800 rounded-2xl'>
-                            <CameraOff className='text-gray-500' size={64} />
+                        <div className='h-[180px] flex items-center justify-center bg-gray-800 rounded-2xl'>
+                            <CameraOff className='text-gray-500' size={48} />
                         </div>
                     )}
                     
-                    <div className='absolute top-4 right-4 bg-black/50 rounded-sm'>
+                    <div className='absolute top-3 right-3 bg-black/50 rounded-sm'>
                         <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={toggleWebcam}
-                            className='text-white hover:bg-black/50 hover:text-white'
+                            className='text-white hover:bg-black/50 hover:text-white h-8 w-8'
                         >
-                            {webcamEnabled ? <CameraOff size={20} /> : <Camera size={20} />}
+                            {webcamEnabled ? <CameraOff size={16} /> : <Camera size={16} />}
                         </Button>
                     </div>
                 </div>
             </div>
             
-            {/* Transcript Display with Editing */}
-            {userAnswer && (
-                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 w-full border border-white/10 max-h-48 overflow-y-auto">
-                    <div className='flex justify-between items-center mb-2'>
-                        <h3 className="text-xl font-bold 
-                            bg-clip-text text-transparent 
-                            bg-gradient-to-r from-cyan-300 to-blue-500">
-                            Your Answer
-                        </h3>
-                        {!isEditing ? (
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={handleEditAnswer}
-                                className='flex items-center space-x-2 text-black'
-                            >
-                                <Edit size={16} />
-                                <span>You can edit after recording</span>
-                            </Button>
-                        ) : (
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={handleSaveEditedAnswer}
-                                className='flex items-center space-x-2 font-bold border-green-500 text-green-500 hover:bg-green-500/10 hover:text-white'
-                            >
-                                <Check size={16} />
-                                <span>Done</span>
-                            </Button>
-                        )}
-                    </div>
-                    
-                    {isEditing ? (
-                        <textarea
-                            value={editableAnswer}
-                            onChange={(e) => setEditableAnswer(e.target.value)}
-                            className="w-full bg-white/10 p-3 rounded-xl text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            rows={4}
-                        />
-                    ) : (
-                        <p className="text-gray-300 break-words">{userAnswer}</p>
+            {/* Answer input area (Always Present) */}
+            <div className="w-full flex flex-col space-y-3">
+                <div className='flex justify-between items-center mb-0.5'>
+                    <h3 className="text-lg font-bold 
+                        bg-clip-text text-transparent 
+                        bg-gradient-to-r from-cyan-300 to-blue-500">
+                        Your Answer
+                    </h3>
+                    {userAnswer && (
+                        <span className="text-xs text-gray-500 font-light">
+                            {userAnswer.length} characters
+                        </span>
                     )}
                 </div>
-            )}
-            
-            {/* Record Button */}
-            <Button 
-                disabled={loading} 
-                className={`
-                    w-full 
-                    py-6
-                    flex items-center justify-center 
-                    space-x-3 
-                    ${isRecording 
-                        ? 'bg-red-500/20 border-red-500/30 hover:bg-red-500/40 text-red-400' 
-                        : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'}
-                `}
-                onClick={startStopRecording}
-            >
-                {isRecording ? (
-                    <>
-                        <StopCircle className="animate-pulse" size={24} />
-                        <span className='font-bold animate-pulse'>Stop Recording</span>
-                    </>
-                ) : (
-                    <>
-                        <Mic size={24} />
-                        <span>Record Your Answer</span>
-                    </>
-                )}
-            </Button>
+                
+                <textarea
+                    value={userAnswer}
+                    onChange={(e) => setUserAnswer(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 p-3 rounded-xl text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 font-mono text-sm"
+                    placeholder="Type/paste your answer here, or click 'Record Answer' below to dictate your voice..."
+                    rows={4}
+                />
+
+                <div className="flex flex-col sm:flex-row gap-4 w-full pt-2">
+                    {/* Record Button */}
+                    <Button 
+                        disabled={loading} 
+                        type="button"
+                        className={`
+                            flex-1
+                            py-6
+                            flex items-center justify-center 
+                            space-x-3 
+                            ${isRecording 
+                                ? 'bg-red-500/20 border border-red-500/30 hover:bg-red-500/40 text-red-400' 
+                                : 'bg-transparent border border-white/10 hover:bg-white/5 text-white'}
+                        `}
+                        onClick={startStopRecording}
+                    >
+                        {isRecording ? (
+                            <>
+                                <StopCircle className="animate-pulse text-red-500" size={20} />
+                                <span className='font-bold animate-pulse'>Stop Recording</span>
+                            </>
+                        ) : (
+                            <>
+                                <Mic className="text-blue-400" size={20} />
+                                <span>Record Answer</span>
+                            </>
+                        )}
+                    </Button>
+
+                    {/* Submit Button */}
+                    <Button 
+                        disabled={loading || userAnswer.trim().length < 5} 
+                        type="button"
+                        className="flex-1 py-6 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold"
+                        onClick={() => updateUserAnswer(userAnswer)}
+                    >
+                        {loading ? (
+                            <>
+                                <LoaderCircle className="animate-spin mr-2" />
+                                Saving Answer...
+                            </>
+                        ) : (
+                            "Submit Answer"
+                        )}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }
